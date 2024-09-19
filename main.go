@@ -6,12 +6,20 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/gorilla/websocket"
 
 	_ "github.com/go-sql-driver/mysql"
 )
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 
 // Secret key to sign tokens
 var jwtKey = []byte("my_secret_key")
@@ -36,6 +44,32 @@ const (
 	AccessTokenExpiry  = 30 * time.Minute //access token time
 	RefreshTokenExpiry = 30 * time.Minute //refresh token time
 )
+
+func chatHandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println("Error during connection upgrade:", err)
+		return
+	}
+	defer conn.Close()
+
+	for {
+		//get messages
+		var msg Message
+		err := conn.ReadJSON(&msg)
+		if err != nil {
+			log.Println("Error reading JSON:", err)
+			break
+		}
+		log.Printf("Received message: %s", msg.Message)
+		//Send message back (via echo)
+		err = conn.WriteJSON(msg)
+		if err != nil {
+			log.Println("Error writing JSON:", err)
+			break
+		}
+	}
+}
 
 func initDB() {
 	var err error
@@ -251,14 +285,20 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func helloHandler(w http.ResponseWriter, r *http.Request) {
-	msg := Message{
-		Status:  "success",
-		Message: fmt.Sprintf("Merhaba, %s .", r.URL.Path[1:]),
+func homeHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Not a valid request method", http.StatusMethodNotAllowed)
+		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("specialauth", "testsaltplace")
-	json.NewEncoder(w).Encode(msg)
+	/// Read Html File
+	html, err := os.ReadFile("routes/homepage/index.html")
+	if err != nil {
+		http.Error(w, "Could not read HTML file", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html")
+	w.Write(html)
 }
 
 func welcomeHandler(w http.ResponseWriter, r *http.Request) {
@@ -444,10 +484,11 @@ func main() {
 	initDB() // starting to connect MySQL database.
 
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", homeHandler)
 	mux.HandleFunc("/login", loginHandler)          // Login route
 	mux.HandleFunc("/refresh", refreshTokenHandler) // Refresh token route
 
-	mux.HandleFunc("/hello", helloHandler)
 	mux.HandleFunc("/welcome", welcomeHandler)
 	mux.HandleFunc("/post", postHandler)
 	// CRUD (2nd step only for authorized users. After JWT settings.)
@@ -457,10 +498,13 @@ func main() {
 	mux.Handle("/update", authMiddleware(http.HandlerFunc(updateUserHandler)))
 	mux.Handle("/delete", authMiddleware(http.HandlerFunc(deleteUserHandler)))
 
+	///WS Integration
+	mux.HandleFunc("/ws", chatHandler)
+
 	loggedMux := loggingMiddleware(mux)
 	authMux := authMiddleware(loggedMux)
 
-	fmt.Println("Server has been started. Port: 9999")
+	fmt.Println("Server has been started. Url: http://localhost:9999/")
 	http.ListenAndServe(":9999", authMux)
 
 }

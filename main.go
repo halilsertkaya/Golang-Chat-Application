@@ -39,7 +39,7 @@ const (
 
 func initDB() {
 	var err error
-	dsn := "root:@tcp(localhost:3306)/golivechat"
+	dsn := "root:@tcp(mysql:3306)/golivechat"
 	db, err = sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal(err)
@@ -48,7 +48,7 @@ func initDB() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Connected to 'golivechat' db on localhost:3306")
+	fmt.Println("Connected to 'golivechat' db on mysql:3306")
 }
 
 // Easy Midware controlling.

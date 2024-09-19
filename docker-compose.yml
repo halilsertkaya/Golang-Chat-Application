@@ -8,13 +8,15 @@ services:
       MYSQL_DATABASE: golivechat
     ports:
       - "3306:3306"
+    volumes:
+      - "./init.sql:/docker-entrypoint-initdb.d/init.sql"
   gochat:
-    image: gochat
+    build: .
     container_name: gochat
     command: sh -c "sleep 10 && ./gochat"
-    depends_on:
-      - mysql
     ports: 
       - "9999:9999"
     environment:
       DSN: "root:@tcp(mysql:3306)/golivechat"
+    depends_on:
+      - mysql

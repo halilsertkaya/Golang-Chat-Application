@@ -18,4 +18,3 @@ services:
       - "9999:9999"
     environment:
       DSN: "root:@tcp(mysql:3306)/golivechat"
-    restart: on-failure

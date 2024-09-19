@@ -464,8 +464,3 @@ func main() {
 	http.ListenAndServe(":9999", authMux)
 
 }
-
-/// DB name : golivechat
-/// default username : root
-/// default password : BLANK.
-/// default port : 3307

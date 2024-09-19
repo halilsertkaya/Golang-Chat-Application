@@ -1,0 +1,6 @@
+# Go build output remove
+/main
+# Dependency directories
+/vendor/
+# IDE etc.
+.vscode/

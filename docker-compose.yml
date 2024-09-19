@@ -1,15 +1,21 @@
 version: '3'
 services:
-  app:
-    build: .
-    ports: 
-      - "9999:9999"
-    environment:
-      - DSN=root:@tcp(db:3306)/golivechat
-  db:
+  mysql:
     image: mysql:5.7
+    container_name: mysql
     environment:
-      MYSQL_ROOT_PASSWORD: ""
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
       MYSQL_DATABASE: golivechat
     ports:
       - "3306:3306"
+  gochat:
+    image: gochat
+    container_name: gochat
+    command: sh -c "sleep 10 && ./gochat"
+    depends_on:
+      - mysql
+    ports: 
+      - "9999:9999"
+    environment:
+      DSN: "root:@tcp(mysql:3306)/golivechat"
+    restart: on-failure

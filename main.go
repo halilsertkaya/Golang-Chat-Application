@@ -97,7 +97,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 func authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// bypass for login url.
-		if r.URL.Path == "/login" {
+		if r.URL.Path == "/login" || r.URL.Path == "/" {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -491,6 +491,7 @@ func main() {
 
 	mux.HandleFunc("/welcome", welcomeHandler)
 	mux.HandleFunc("/post", postHandler)
+
 	// CRUD (2nd step only for authorized users. After JWT settings.)
 	mux.Handle("/users", authMiddleware(http.HandlerFunc(getUsersHandler)))
 	mux.Handle("/create", authMiddleware(http.HandlerFunc(createUserHandler)))
